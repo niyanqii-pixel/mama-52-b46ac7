@@ -1,0 +1,1022 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>妈妈，生日快乐</title>
+<meta name="description" content="点开，一起吹蜡烛">
+<link rel="preload" href="fonts/wenkai.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face { font-family: "LXGW WenKai"; src: url("fonts/wenkai.woff2") format("woff2"); font-display: swap; }
+
+:root {
+  /* 布局：一屏一个场景。上面一句话，中间是蛋糕，下面一个按钮。先关灯点蜡烛，吹灭后开灯切蛋糕。 */
+  --night: #170f12;
+  --night-ink: #f3e4d8;
+  --night-soft: #a68f86;
+  --flame: #ffcf7a;
+  --room: #f8e5df;
+  --ink: #4b1f28;
+  --ink-soft: #8d5c63;
+  --berry: #c8394b;
+  --paper: #fffaf4;
+  --rule: #efd9d2;
+  --font-display: "Songti SC", "STSong", "Noto Serif SC", "Noto Serif CJK SC", "Source Han Serif SC", "SimSun", serif;
+  --font-hand: "LXGW WenKai", "Kaiti SC", "STKaiti", "KaiTi", "Noto Serif SC", serif;
+  --font-ui: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  color-scheme: dark;
+}
+[hidden] { display: none !important; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body {
+  --bg: var(--night); --fg: var(--night-ink); --fg2: var(--night-soft);
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font-ui);
+  transition: background-color 1.4s ease, color 1.4s ease;
+  -webkit-user-select: none; user-select: none;
+  -webkit-text-size-adjust: 100%;
+}
+body[data-lights="on"] { --bg: var(--room); --fg: var(--ink); --fg2: var(--ink-soft); color-scheme: light; }
+
+.stage {
+  position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+  display: flex; flex-direction: column; align-items: center;
+  padding-top: max(18px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(22px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.clocks { min-height: 1.5em; font-size: 13px; letter-spacing: .06em; color: var(--fg2); font-variant-numeric: tabular-nums; text-align: center; transition: opacity .8s; }
+.clocks.gone { opacity: 0; }
+.caption {
+  width: 100%; max-width: 30em; min-height: 8.6em;
+  display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 10px;
+  text-align: center; transition: opacity .32s ease, transform .32s ease;
+}
+.caption.out { opacity: 0; transform: translateY(6px); }
+.big { font-family: var(--font-display); font-size: clamp(23px, 6.6vw, 32px); line-height: 1.45; letter-spacing: .06em; font-weight: 600; text-wrap: balance; }
+.big .ln { display: block; animation: rise 1.1s ease both; }
+.small { min-height: 1.6em; font-size: 15px; line-height: 1.6; color: var(--fg2); letter-spacing: .04em; }
+
+.cake { position: relative; flex: 1 1 auto; min-height: 0; width: 100%; max-width: 440px; display: flex; align-items: center; justify-content: center; }
+#side { display: block; width: 100%; height: 100%; max-height: 62vh; overflow: visible; transition: opacity .5s ease, transform .5s ease; }
+#side.away { opacity: 0; transform: scale(.9) translateY(12px); }
+#side.tappable { cursor: pointer; }
+#top { display: block; width: min(94%, 52vh); height: auto; overflow: visible; opacity: 0; transform: scale(.82) rotate(-30deg); transition: opacity .7s ease, transform 1s cubic-bezier(.2, .8, .2, 1); }
+#top.in { opacity: 1; transform: none; }
+
+.actions { min-height: 108px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+.actions > * { animation: rise .7s ease both; }
+.btn {
+  appearance: none; -webkit-appearance: none; cursor: pointer;
+  font-family: var(--font-display); font-size: 18px; letter-spacing: .14em; font-weight: 600;
+  padding: 14px 34px; border-radius: 999px;
+  color: var(--flame); background: rgba(255, 190, 100, .08);
+  border: 1px solid rgba(255, 196, 110, .55);
+  box-shadow: 0 0 24px rgba(255, 160, 70, .2);
+  transition: transform .15s ease, background-color .3s ease;
+}
+.btn:active { transform: scale(.97); }
+body[data-lights="on"] .btn, .sheet .btn, .letter .btn { color: #fff; background: var(--berry); border-color: var(--berry); box-shadow: 0 8px 20px rgba(200, 57, 75, .28); }
+.link { appearance: none; -webkit-appearance: none; background: none; border: 0; cursor: pointer; font: inherit; font-size: 14px; color: var(--fg2); text-decoration: underline; text-underline-offset: 4px; padding: 10px; }
+.hint { font-size: 13px; color: var(--fg2); letter-spacing: .06em; }
+button:focus-visible { outline: 2px solid var(--flame); outline-offset: 3px; }
+
+/* 侧面的蛋糕 */
+.num { font-family: "Arial Rounded MT Bold", "Helvetica Neue", Arial, sans-serif; font-weight: 900; font-size: 88px; }
+.wick { stroke: #3b2a22; stroke-width: 2.4; stroke-linecap: round; }
+#dark { opacity: .93; transition: opacity 1.4s ease; }
+#shade { transition: opacity 1.4s ease; }
+#glow { mix-blend-mode: screen; opacity: 0; transition: opacity 1s ease; }
+#glow.on { opacity: 1; animation: glow 2.4s ease-in-out infinite; }
+.fs, .fl, .ff { transform-box: view-box; }
+.fs { transform: scale(0); opacity: 0; transition: transform .55s cubic-bezier(.3, 1.7, .5, 1), opacity .25s ease; }
+.flame.on .fs { transform: scale(1); opacity: 1; }
+.flame.off .fs { transform: scale(.25, .05); opacity: 0; transition: transform .3s ease-in, opacity .3s ease-in; }
+.fl { transform: skewX(var(--lean, 0deg)) scaleY(var(--squash, 1)); transition: transform .09s linear; }
+.ff { animation: flicker 1.7s ease-in-out infinite; }
+.smoke path { fill: none; stroke: #cfc5c0; stroke-width: 2.2; stroke-linecap: round; stroke-dasharray: 90; stroke-dashoffset: 90; opacity: 0; }
+.smoke.go path { animation: smoke 2.6s ease-out forwards; }
+.smoke.go path:nth-child(2) { animation-delay: .25s; }
+.smoke.go path:nth-child(3) { animation-delay: .5s; }
+
+/* 俯视的蛋糕 */
+.w-cake { fill: #f7c3cc; stroke: #f7c3cc; stroke-width: .8; transition: fill .4s ease, stroke .4s ease; }
+#wedges.apart .w-cake { stroke: #eeaab6; }
+.w-rim { fill: none; stroke: #fff3e6; stroke-width: 11; }
+.mine-tag { opacity: 0; transition: opacity .6s ease .3s; }
+#wedges.apart .mine-tag { opacity: 1; }
+.w-rose { fill: #fff6ec; stroke: #f1dcc8; stroke-width: 1; }
+.w-rose-in { fill: none; stroke: #ecd2bb; stroke-width: 1.2; }
+.wedge { cursor: pointer; transition: transform .45s cubic-bezier(.2, .8, .2, 1); }
+.wedge > * { transition: opacity .4s ease; }
+#wedges.apart .wedge { transform: translate(calc(var(--dx) * .22), calc(var(--dy) * .22)); }
+#wedges.apart .wedge.pick { transform: translate(var(--dx), var(--dy)); }
+.wedge.eaten > *:not(.w-cake) { opacity: 0; }
+.wedge.eaten .w-cake { fill: #f3dcd6; stroke: #dcb3ab; stroke-dasharray: 3 4; }
+#wedges.apart .wedge.mine.call { animation: call 1.3s ease-in-out infinite; }
+.tag { font-family: var(--font-ui); font-size: 12px; font-weight: 600; fill: #c8394b; }
+.cut { stroke: #a9606b; stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 260; stroke-dashoffset: 260; opacity: .75; }
+#cuts.go .cut { stroke-dashoffset: 0; transition: stroke-dashoffset .32s ease-out; }
+#cuts.fade { opacity: 0; transition: opacity .6s ease; }
+.guide { stroke: var(--berry); stroke-width: 2; stroke-dasharray: 6 8; opacity: .55; animation: march 1s linear infinite; }
+.guide.gone { opacity: 0; animation: none; transition: opacity .3s ease; }
+.trail { stroke: #9aa3ad; stroke-width: 3.5; stroke-linecap: round; opacity: 0; }
+.trail.on { opacity: .85; }
+
+/* 许愿时屏幕变暗 */
+.dim { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 5; background: #000; opacity: 0; pointer-events: none; transition: opacity 1.8s ease; }
+body.eyes .dim { opacity: .84; }
+#fx { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 6; pointer-events: none; }
+
+/* 每一块蛋糕里的照片 */
+.card { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 10; display: flex; align-items: flex-end; justify-content: center; background: rgba(60, 22, 30, .42); opacity: 0; transition: opacity .35s ease; }
+.card.show { opacity: 1; }
+.sheet {
+  width: 100%; max-width: 520px; max-height: 94%; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  background: var(--paper); color: var(--ink); border-radius: 22px 22px 0 0;
+  padding-top: 20px;
+  padding-bottom: max(22px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(20px, env(safe-area-inset-left, 0px));
+  padding-right: max(20px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center;
+  transform: translateY(40px); transition: transform .45s cubic-bezier(.2, .8, .2, 1);
+}
+.card.show .sheet { transform: none; }
+.count { font-size: 12px; letter-spacing: .2em; color: var(--ink-soft); }
+.photo { margin: 4px 0 0; max-width: 100%; background: #fff; padding: 10px 10px 12px; box-shadow: 0 10px 28px rgba(75, 31, 40, .18), 0 1px 3px rgba(75, 31, 40, .12); transform: rotate(var(--tilt, -1.5deg)); }
+.photo img { display: block; max-width: 100%; max-height: 46vh; width: auto; height: auto; margin: 0 auto; }
+.photo figcaption { min-height: 1em; padding-top: 8px; font-family: var(--font-hand); font-size: 15px; color: var(--ink-soft); }
+.ph { width: min(72vw, 300px); height: min(80vw, 330px); max-height: 44vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 16px; background: repeating-linear-gradient(135deg, #f6e9e4 0 12px, #f1e0da 12px 24px); color: var(--ink-soft); font-size: 14px; line-height: 1.6; }
+.ph b { font-family: var(--font-display); font-size: 20px; font-weight: 600; color: var(--ink); }
+.mine-art { width: 190px; max-width: 70%; height: auto; }
+.sheet h2 { margin: 6px 0 0; font-family: var(--font-display); font-size: 23px; font-weight: 600; letter-spacing: .08em; text-wrap: balance; }
+.sheet .text { margin: 0; max-width: 24em; font-family: var(--font-hand); font-size: 19px; line-height: 1.85; text-align: left; }
+.countdown { font-family: var(--font-display); font-size: 16px; letter-spacing: .12em; color: var(--berry); }
+
+/* 信 */
+.letter {
+  position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 20;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  background: var(--room); color: var(--ink);
+  padding-top: max(28px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(44px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  opacity: 0; transition: opacity .8s ease;
+  -webkit-user-select: text; user-select: text;
+}
+.letter.show { opacity: 1; }
+.paper {
+  --lh: 38px;
+  max-width: 560px; margin: 0 auto; padding: 30px 24px 38px;
+  background-color: var(--paper);
+  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--lh) - 1px), var(--rule) calc(var(--lh) - 1px), var(--rule) var(--lh));
+  background-position: 0 30px;
+  border-radius: 4px; box-shadow: 0 14px 40px rgba(75, 31, 40, .14);
+  font-family: var(--font-hand); font-size: 19px; line-height: var(--lh);
+}
+.paper p { margin: 0; text-indent: 2em; animation: rise 1s ease both; }
+.paper p.salute { text-indent: 0; }
+.paper p.sign, .paper p.date { text-indent: 0; text-align: right; }
+.paper p.sign { margin-top: var(--lh); }
+.thumbs { max-width: 560px; margin: 36px auto 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+.thumbs figure { margin: 0; width: 88px; padding: 5px 5px 14px; background: #fff; box-shadow: 0 6px 16px rgba(75, 31, 40, .14); transform: rotate(var(--tilt, 0deg)); }
+.thumbs img, .thumbs .tph { display: block; width: 78px; height: 78px; object-fit: cover; }
+.thumbs .tph { display: flex; align-items: center; justify-content: center; background: #f1e0da; color: var(--ink-soft); font-size: 13px; }
+.final { margin: 40px 0 22px; text-align: center; font-family: var(--font-display); font-size: clamp(22px, 6vw, 28px); font-weight: 600; letter-spacing: .08em; text-wrap: balance; }
+.again { display: flex; justify-content: center; }
+
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes flicker {
+  0%, 100% { transform: scale(1, 1) skewX(0deg); }
+  25% { transform: scale(.96, 1.06) skewX(2deg); }
+  50% { transform: scale(1.03, .95) skewX(-1.5deg); }
+  75% { transform: scale(.98, 1.04) skewX(1deg); }
+}
+@keyframes glow { 50% { opacity: .8; } }
+@keyframes smoke { 0% { stroke-dashoffset: 90; opacity: 0; transform: translateY(0); } 15% { opacity: .85; } 100% { stroke-dashoffset: 0; opacity: 0; transform: translateY(-26px); } }
+@keyframes march { to { stroke-dashoffset: -14; } }
+@keyframes call { 50% { transform: translate(calc(var(--dx) * .7), calc(var(--dy) * .7)); } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .2s !important; }
+}
+</style>
+</head>
+<body data-lights="off">
+
+<main class="stage">
+  <div class="clocks" id="clocks"></div>
+  <div class="caption out" id="caption" aria-live="polite">
+    <div class="big" id="big"></div>
+    <div class="small" id="small"></div>
+  </div>
+
+  <div class="cake" id="cake">
+    <svg id="side" viewBox="0 0 300 320" role="img" aria-label="生日蛋糕">
+      <defs>
+        <linearGradient id="gBody" x1="0" x2="1">
+          <stop offset="0" stop-color="#e48f9f"/><stop offset=".35" stop-color="#f7bfca"/>
+          <stop offset=".62" stop-color="#fbd2da"/><stop offset="1" stop-color="#dd8496"/>
+        </linearGradient>
+        <linearGradient id="gTop" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#fff6ea"/><stop offset="1" stop-color="#f6e2cf"/>
+        </linearGradient>
+        <radialGradient id="gFlame" cx=".5" cy=".78" r=".78">
+          <stop offset="0" stop-color="#fff2c4"/><stop offset=".45" stop-color="#ffc24a"/><stop offset="1" stop-color="#ff7a1f"/>
+        </radialGradient>
+        <radialGradient id="gGlow">
+          <stop offset="0" stop-color="#ffb347" stop-opacity=".6"/><stop offset="1" stop-color="#ffb347" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="gShade" cx=".5" cy=".28" r=".8">
+          <stop offset="0" stop-color="#170f12" stop-opacity="0"/><stop offset=".5" stop-color="#170f12" stop-opacity=".3"/>
+          <stop offset="1" stop-color="#170f12" stop-opacity=".9"/>
+        </radialGradient>
+        <pattern id="pBlue" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+          <rect width="10" height="10" fill="#7fbde6"/><rect width="4" height="10" fill="#d9eefb"/>
+        </pattern>
+        <pattern id="pGold" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+          <rect width="10" height="10" fill="#f6c453"/><rect width="4" height="10" fill="#fff1c9"/>
+        </pattern>
+        <pattern id="pPink" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+          <rect width="10" height="10" fill="#f19aac"/><rect width="4" height="10" fill="#ffe3ea"/>
+        </pattern>
+      </defs>
+      <ellipse cx="150" cy="272" rx="140" ry="27" fill="#efe6df"/>
+      <ellipse cx="150" cy="268" rx="124" ry="21" fill="#f8f2ed"/>
+      <path d="M38 150V256A112 32 0 0 0 262 256V150Z" fill="url(#gBody)"/>
+      <path d="M38 204A112 32 0 0 0 262 204" fill="none" stroke="#fff3e4" stroke-width="7" stroke-linecap="round" stroke-dasharray="0.01 11"/>
+      <path d="M40 254A110 31 0 0 0 260 254" fill="none" stroke="#fff3e4" stroke-width="12" stroke-linecap="round" stroke-dasharray="0.01 13"/>
+      <g id="drips"></g>
+      <ellipse cx="150" cy="150" rx="112" ry="32" fill="url(#gTop)"/>
+      <g id="berriesBack"></g>
+      <g id="candles"></g>
+      <g id="berriesFront"></g>
+      <rect id="shade" x="-20" y="-20" width="340" height="360" fill="url(#gShade)"/>
+      <rect id="dark" x="-20" y="-20" width="340" height="360" fill="#170f12"/>
+      <circle id="glow" cx="150" cy="74" r="104" fill="url(#gGlow)"/>
+      <g id="flames"></g>
+      <g id="smokes"></g>
+    </svg>
+    <svg id="top" viewBox="-160 -160 320 320" role="img" aria-label="切开的蛋糕" hidden></svg>
+  </div>
+
+  <div class="actions" id="actions"></div>
+</main>
+
+<div class="dim" aria-hidden="true"></div>
+<canvas id="fx" aria-hidden="true"></canvas>
+
+<div class="card" id="card" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="cardTitle">
+    <div class="count" id="count"></div>
+    <figure class="photo" id="photo">
+      <img alt="">
+      <div class="ph" hidden></div>
+      <figcaption></figcaption>
+    </figure>
+    <svg class="mine-art" id="mineArt" viewBox="0 0 200 150" aria-hidden="true" hidden>
+      <ellipse cx="100" cy="122" rx="86" ry="20" fill="#efe5de"/>
+      <ellipse cx="100" cy="119" rx="72" ry="15" fill="#faf5f1"/>
+      <path d="M50 92L118 62L150 92Z" fill="#f7c3cc"/>
+      <path d="M50 92H150V117H50Z" fill="#f3d39a"/>
+      <path d="M50 102H150" stroke="#fff3e6" stroke-width="4"/>
+      <path d="M50 110H150" stroke="#e88a9c" stroke-width="3"/>
+      <path d="M50 92H150" stroke="#fff3e6" stroke-width="5" stroke-linecap="round"/>
+      <path d="M100 74C106 74 108 79 106 84C104 89 101 91 100 91C99 91 96 89 94 84C92 79 94 74 100 74Z" fill="#d33a4c"/>
+      <path d="M94 74L99 75L100 70L101 75L106 74L102 77L100 76L98 77Z" fill="#4f9a4a"/>
+      <line x1="128" y1="84" x2="128" y2="34" stroke="#c9a27a" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M128 32L172 43L128 54Z" fill="#c8394b"/>
+      <text x="145" y="46.5" font-size="9" font-weight="700" fill="#fff" text-anchor="middle" font-family="-apple-system, PingFang SC, sans-serif">我的</text>
+    </svg>
+    <h2 id="cardTitle"></h2>
+    <p class="text" id="cardText"></p>
+    <div class="countdown" id="countdown" hidden></div>
+    <button class="btn" id="cardBtn" type="button">收下啦</button>
+  </div>
+</div>
+
+<section class="letter" id="letter" hidden>
+  <article class="paper" id="paper"></article>
+  <div class="thumbs" id="thumbs"></div>
+  <p class="final" id="final"></p>
+  <div class="again"><button class="btn" id="again" type="button">再吹一次蜡烛</button></div>
+</section>
+
+<script>
+/* ============================================================
+   要改的内容都在这里。照片放进 photos 文件夹，名字对应上就行。
+   ============================================================ */
+const CONFIG = {
+  age: 52,
+  from: '（你的名字）',                      // 信末署名：爱你的 ___
+  date: '2026 年 10 月 29 日',
+
+  // 开头显示两地时间。妈妈不在国内的话改 momZone；两个一样就不显示。
+  momZone: 'Asia/Shanghai',   momLabel: '你那里',
+  myZone: 'Australia/Sydney', myLabel: '我这里',
+
+  intro: ['妈，', '今年生日我不在你身边，', '但这一刻，我陪你过。'],
+
+  // 你录的生日歌，比如 'song.m4a'。留空就先用八音盒版。
+  song: '',
+  songCaption: ['这首生日歌是我唱的', '跑调了也不许笑'],
+  synthCaption: ['祝你生日快乐', '（预览：之后换成你自己唱的版本）'],
+
+  lightsOn: ['生日快乐，妈妈', '愿望一定会实现的'],
+
+  // 七块蛋糕，按顺序一块一块打开。hint 只在没放照片时显示。
+  slices: [
+    { photo: 'photos/1.jpg', note: '', title: '在成为妈妈以前', text: '（示例）这是你年轻时候的样子。那时候的你，还不知道以后会有一个我。', hint: '放一张她年轻时的照片' },
+    { photo: 'photos/2.jpg', note: '', title: '我来了', text: '（示例）从这一天起，你多了一个名字，叫妈妈。', hint: '她抱着小时候的你' },
+    { photo: 'photos/3.jpg', note: '', title: '小时候', text: '（示例）写一件小时候你为我做过的小事，越具体越好。', hint: '你小时候和她' },
+    { photo: 'photos/4.jpg', note: '', title: '我们家', text: '（示例）一张全家福。', hint: '全家福' },
+    { photo: 'photos/5.jpg', note: '', title: '家的味道', text: '（示例）在外面吃过那么多东西，最想的还是你做的那一道菜。', hint: '她做的菜，或者家里的一个角落' },
+    { photo: 'photos/6.jpg', note: '', title: '我们俩', text: '（示例）长大以后，我们的合影。', hint: '你长大后和她的合影' },
+    { photo: 'photos/7.jpg', note: '', title: '现在的你', text: '（示例）你最近笑得最开心的一张。', hint: '她最近笑得最开心的一张' },
+  ],
+
+  // 第八块，留给你自己。returnDate 填上就显示倒计时，比如 '2026-12-20'。
+  mine: { title: '这一块，帮我留着', text: '12 月我就回家了。到时候我们补过一次生日，再一起切一次蛋糕。', returnDate: '' },
+
+  letter: [
+    '妈：',
+    '（示例）这里是一封信。不用很长，写平时不好意思当面说的话就好。',
+    '可以写最近一次想你是什么时候，可以写我从你身上学到的东西，也可以写在你 52 岁这一年，我想替你许的愿。',
+    '……',
+  ],
+  ending: '生日快乐，妈妈。我爱你。',
+};
+</script>
+
+<script>
+(() => {
+  const C = CONFIG;
+  const $ = (s) => document.querySelector(s);
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const rad = (d) => (d * Math.PI) / 180;
+  const f2 = (n) => Math.round(n * 100) / 100;
+  function el(tag, attrs, parent) {
+    const n = document.createElementNS(SVGNS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+
+  /* ---------- 文字和按钮 ---------- */
+  const cap = $('#caption'), big = $('#big'), small = $('#small'), actions = $('#actions');
+  async function say(main, sub) {
+    cap.classList.add('out');
+    await wait(330);
+    big.innerHTML = '';
+    const lines = Array.isArray(main) ? main : [main];
+    lines.forEach((t, i) => {
+      const s = document.createElement('span');
+      s.className = 'ln';
+      s.textContent = t;
+      s.style.animationDelay = (lines.length > 1 ? i * 0.9 : 0) + 's';
+      big.appendChild(s);
+    });
+    small.textContent = sub || '';
+    cap.classList.remove('out');
+  }
+  function act(list) {
+    actions.innerHTML = '';
+    (list || []).forEach((a) => {
+      if (a.hint) {
+        const d = document.createElement('div');
+        d.className = 'hint';
+        d.textContent = a.hint;
+        if (a.delay) d.style.animationDelay = a.delay + 's';
+        actions.appendChild(d);
+        return;
+      }
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = a.link ? 'link' : 'btn';
+      b.textContent = a.label;
+      if (a.delay) b.style.animationDelay = a.delay + 's';
+      b.addEventListener('click', () => { b.disabled = true; a.on(); });
+      actions.appendChild(b);
+    });
+  }
+
+  /* ---------- 两地时间 ---------- */
+  const clockEl = $('#clocks');
+  function tick() {
+    if (!C.momZone || C.momZone === C.myZone) { clockEl.textContent = ''; return; }
+    try {
+      const f = (z) => new Intl.DateTimeFormat('zh-CN', { timeZone: z, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date());
+      clockEl.textContent = `${C.momLabel} ${f(C.momZone)}　·　${C.myLabel} ${f(C.myZone)}`;
+    } catch (e) { clockEl.textContent = ''; }
+  }
+  tick();
+  setInterval(tick, 20000);
+
+  /* ---------- 声音 ---------- */
+  let ac = null, master = null;
+  function audio() {
+    if (!ac) {
+      const A = window.AudioContext || window.webkitAudioContext;
+      if (!A) return null;
+      ac = new A();
+      master = ac.createGain();
+      master.gain.value = 0.9;
+      const d = ac.createDelay(), fb = ac.createGain(), wet = ac.createGain();
+      d.delayTime.value = 0.23; fb.gain.value = 0.28; wet.gain.value = 0.25;
+      master.connect(ac.destination);
+      master.connect(d); d.connect(fb); fb.connect(d); d.connect(wet); wet.connect(ac.destination);
+    }
+    if (ac.state === 'suspended') ac.resume().catch(() => {});
+    return ac;
+  }
+  function tone(freq, t, dur, vol) {
+    const o1 = ac.createOscillator(), o2 = ac.createOscillator(), g = ac.createGain(), g2 = ac.createGain();
+    o1.frequency.value = freq; o2.frequency.value = freq * 2; g2.gain.value = 0.25;
+    o1.connect(g); o2.connect(g2); g2.connect(g); g.connect(master);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o1.start(t); o2.start(t); o1.stop(t + dur + 0.05); o2.stop(t + dur + 0.05);
+  }
+  const HZ = { G4: 392, A4: 440, B4: 493.88, C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46, G5: 783.99 };
+  const TUNE = [
+    ['G4', .75], ['G4', .25], ['A4', 1], ['G4', 1], ['C5', 1], ['B4', 2],
+    ['G4', .75], ['G4', .25], ['A4', 1], ['G4', 1], ['D5', 1], ['C5', 2],
+    ['G4', .75], ['G4', .25], ['G5', 1], ['E5', 1], ['C5', 1], ['B4', 1], ['A4', 2],
+    ['F5', .75], ['F5', .25], ['E5', 1], ['C5', 1], ['D5', 1], ['C5', 3],
+  ];
+  function musicBox() {
+    if (!audio()) return 0;
+    const beat = 0.56;
+    let t = ac.currentTime + 0.25;
+    for (const [n, b] of TUNE) { tone(HZ[n], t, Math.max(1.1, b * beat * 1.6), 0.18); t += b * beat; }
+    return (t - ac.currentTime) * 1000;
+  }
+  function chime() {
+    if (!audio()) return;
+    const t = ac.currentTime + 0.02;
+    tone(1318.5, t, 2.4, 0.22);
+    tone(1975.5, t + 0.02, 2, 0.08);
+  }
+  function fanfare() {
+    if (!audio()) return;
+    const t = ac.currentTime + 0.05;
+    [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, t + i * 0.11, 1.6, 0.14));
+  }
+  function noise(dur, freq, q, vol) {
+    if (!audio()) return;
+    const len = Math.floor(ac.sampleRate * dur), buf = ac.createBuffer(1, len, ac.sampleRate), data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+    src.buffer = buf; f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = q; g.gain.value = vol;
+    src.connect(f); f.connect(g); g.connect(ac.destination);
+    src.start();
+  }
+  const sliceSound = () => noise(0.22, 2600, 0.8, 0.5);
+  const strike = () => noise(0.35, 900, 0.6, 0.25);
+  const click = () => noise(0.05, 1800, 1.5, 0.6);
+
+  // 先放你录的歌；加载不出来就换八音盒，保证仪式能走完
+  function playSong() {
+    return new Promise((done) => {
+      let synthUsed = false, started = false;
+      const synth = () => {
+        if (synthUsed) return;
+        synthUsed = true;
+        setTimeout(done, musicBox() + 300);
+      };
+      if (!C.song) { synth(); return; }
+      const a = new Audio(C.song);
+      const fallback = setTimeout(() => { if (!started) { a.pause(); synth(); } }, 6000);
+      a.addEventListener('playing', () => { started = true; clearTimeout(fallback); if (synthUsed) a.pause(); }, { once: true });
+      a.addEventListener('ended', () => { if (!synthUsed) done(); });
+      a.addEventListener('error', () => { clearTimeout(fallback); if (!started) synth(); else if (!synthUsed) done(); });
+      const p = a.play();
+      if (p && p.catch) p.catch(() => { clearTimeout(fallback); synth(); });
+    });
+  }
+
+  async function keepAwake() {
+    try { if ('wakeLock' in navigator) await navigator.wakeLock.request('screen'); } catch (e) {}
+  }
+
+  /* ---------- 侧面的蛋糕和蜡烛 ---------- */
+  const side = $('#side'), dark = $('#dark'), shade = $('#shade'), glow = $('#glow');
+  const flames = [], smokes = [];
+
+  function berry(parent, x, y, s, rot) {
+    const g = el('g', { transform: `translate(${f2(x)} ${f2(y)}) rotate(${f2(rot)}) scale(${s})` }, parent);
+    el('path', { d: 'M0 -6C6 -6 8 -1 6 4C4 9 1 11 0 11C-1 11 -4 9 -6 4C-8 -1 -6 -6 0 -6Z', fill: '#d33a4c' }, g);
+    [[-2.5, 0], [2.5, 1], [0, 4], [-3, 5], [3, 5.5], [0, 8]].forEach(([a, b]) => el('circle', { cx: a, cy: b, r: 0.7, fill: '#ffe2a8' }, g));
+    el('path', { d: 'M-6 -6L-1 -5L0 -10L1 -5L6 -6L2 -3L0 -4L-2 -3Z', fill: '#4f9a4a' }, g);
+    return g;
+  }
+
+  // 水滴形的火苗，底部在 (x, by)
+  function flamePath(x, by, h, w) {
+    const p = (dx, dy) => `${f2(x + dx)} ${f2(by + dy)}`;
+    return `M${p(0, -h)}C${p(w * .75, -h * .6)} ${p(w, -h * .25)} ${p(w * .6, -h * .06)}` +
+      `C${p(w * .33, 1)} ${p(-w * .33, 1)} ${p(-w * .6, -h * .06)}` +
+      `C${p(-w, -h * .25)} ${p(-w * .75, -h * .6)} ${p(0, -h)}Z`;
+  }
+
+  function flameAt(x, by, i) {
+    const g = el('g', { class: 'flame' }, $('#flames'));
+    const fs = el('g', { class: 'fs' }, g), fl = el('g', { class: 'fl' }, fs), ff = el('g', { class: 'ff' }, fl);
+    [fs, fl, ff].forEach((n) => { n.style.transformOrigin = `${x}px ${by}px`; });
+    ff.style.animationDelay = (-i * 0.53) + 's';
+    el('path', { d: flamePath(x, by, 34, 12), fill: 'url(#gFlame)' }, ff);
+    el('path', { d: flamePath(x, by, 17, 5), fill: '#fff8e3' }, ff);
+    el('ellipse', { cx: x, cy: by - 2, rx: 3.2, ry: 2.4, fill: '#7fb2ff', opacity: 0.65 }, ff);
+    flames.push(g);
+
+    const s = el('g', { class: 'smoke' }, $('#smokes'));
+    [-3, 2, 5].forEach((dx) => {
+      el('path', { d: `M${x} ${by}C${x - 7 + dx} ${by - 12} ${x + 7 + dx} ${by - 22} ${x + dx} ${by - 34}S${x - 6 + dx} ${by - 54} ${x + 2 + dx} ${by - 66}` }, s);
+    });
+    smokes.push(s);
+  }
+
+  function buildSide() {
+    const drips = $('#drips');
+    el('path', { d: 'M38 151A112 32 0 0 0 262 151', fill: 'none', stroke: '#fbeee1', 'stroke-width': 13, 'stroke-linecap': 'round' }, drips);
+    for (let x = 48; x <= 252; x += 17) {
+      const y = 150 + 32 * Math.sqrt(Math.max(0, 1 - ((x - 150) / 112) ** 2));
+      const len = 12 + 11 * Math.abs(Math.sin(x * 1.7));
+      el('rect', { x: x - 6.5, y: f2(y - 4), width: 13, height: f2(len), rx: 6.5, fill: '#fbeee1' }, drips);
+    }
+    for (let k = 0; k < 8; k++) {
+      const a = rad(22.5 + k * 45);
+      const x = 150 + 90 * Math.cos(a), y = 150 + 22 * Math.sin(a);
+      berry(Math.sin(a) < 0 ? $('#berriesBack') : $('#berriesFront'), x, y - 4, 1, 0);
+    }
+    const digits = String(C.age).split('');
+    const fills = ['url(#pBlue)', 'url(#pGold)', 'url(#pPink)'];
+    const gap = 58, x0 = 150 - ((digits.length - 1) * gap) / 2;
+    digits.forEach((d, i) => {
+      const x = x0 + i * gap;
+      el('text', { x, y: 162, class: 'num', fill: fills[i % 3], stroke: '#fff', 'stroke-width': 2.5, 'paint-order': 'stroke', 'text-anchor': 'middle' }, $('#candles')).textContent = d;
+      el('line', { x1: x, y1: 100, x2: x, y2: 89, class: 'wick' }, $('#candles'));
+      flameAt(x, 90, i);
+    });
+  }
+
+  /* ---------- 俯视的蛋糕：八块，最后一块留给我 ---------- */
+  const topSvg = $('#top');
+  const MINE = 7;
+  const wedges = [];
+  const SPRINKLES = ['#f6c453', '#7fbde6', '#ffffff', '#9fd28f'];
+
+  function buildTop() {
+    el('circle', { r: 156, fill: '#efe5de' }, topSvg);
+    el('circle', { r: 143, fill: '#faf5f1' }, topSvg);
+    el('circle', { r: 124, cy: 6, fill: '#4b1f28', opacity: 0.1 }, topSvg);
+    const W = el('g', { id: 'wedges' }, topSvg);
+    const pt = (r, a) => `${f2(r * Math.cos(a))} ${f2(r * Math.sin(a))}`;
+    for (let i = 0; i < 8; i++) {
+      const a1 = rad(-90 + 45 * i), a2 = rad(-45 + 45 * i), m = (a1 + a2) / 2;
+      const g = el('g', { class: 'wedge' + (i === MINE ? ' mine' : ''), 'data-i': i }, W);
+      g.style.setProperty('--dx', f2(Math.cos(m) * 18) + 'px');
+      g.style.setProperty('--dy', f2(Math.sin(m) * 18) + 'px');
+      el('path', { d: `M0 0L${pt(122, a1)}A122 122 0 0 1 ${pt(122, a2)}Z`, class: 'w-cake' }, g);
+      el('path', { d: `M${pt(114, a1)}A114 114 0 0 1 ${pt(114, a2)}`, class: 'w-rim' }, g);
+      for (let k = 0; k < 3; k++) {
+        const a = a1 + ((k + 0.5) * (a2 - a1)) / 3;
+        const cx = f2(100 * Math.cos(a)), cy = f2(100 * Math.sin(a));
+        el('circle', { cx, cy, r: 6.5, class: 'w-rose' }, g);
+        el('circle', { cx, cy, r: 2.8, class: 'w-rose-in' }, g);
+      }
+      for (let k = 0; k < 4; k++) {
+        const r = 22 + ((i * 7 + k * 13) % 34);
+        const a = a1 + (a2 - a1) * (0.15 + (((k * 0.29 + i * 0.13) % 1) * 0.7));
+        const x = f2(r * Math.cos(a)), y = f2(r * Math.sin(a));
+        el('rect', { x: x - 3, y: y - 1, width: 6, height: 2, rx: 1, fill: SPRINKLES[(i + k) % 4], transform: `rotate(${(i * 37 + k * 61) % 180} ${x} ${y})` }, g);
+      }
+      if (i === MINE) {
+        const tg = el('g', { class: 'mine-tag', transform: `translate(${pt(66, m)})` }, g);
+        el('rect', { x: -19, y: -11, width: 38, height: 22, rx: 5, fill: '#fff', stroke: '#c8394b', 'stroke-width': 1.4 }, tg);
+        el('text', { y: 4.5, 'text-anchor': 'middle', class: 'tag' }, tg).textContent = '我的';
+      } else {
+        berry(g, 68 * Math.cos(m), 68 * Math.sin(m), 1.5, (m * 180) / Math.PI + 90);
+      }
+      wedges.push(g);
+    }
+    const cuts = el('g', { id: 'cuts' }, topSvg);
+    for (let k = 0; k < 4; k++) {
+      const a = rad(-90 + 45 * k), c = Math.cos(a), s = Math.sin(a);
+      const line = el('line', { x1: f2(-126 * c), y1: f2(-126 * s), x2: f2(126 * c), y2: f2(126 * s), class: 'cut' }, cuts);
+      line.style.transitionDelay = k * 0.19 + 's';
+    }
+    el('line', { id: 'guide', x1: -140, y1: 0, x2: 140, y2: 0, class: 'guide' }, topSvg);
+    el('line', { id: 'trail', x1: 0, y1: 0, x2: 0, y2: 0, class: 'trail' }, topSvg);
+  }
+
+  /* ---------- 彩纸 ---------- */
+  function confetti() {
+    if (reduce) return;
+    const cv = $('#fx'), ctx = cv.getContext('2d'), dpr = Math.min(2, window.devicePixelRatio || 1);
+    const W = innerWidth, H = innerHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const cols = ['#c8394b', '#f2a93b', '#7fbde6', '#f7bfca', '#fff3e4', '#9fd28f'];
+    const P = Array.from({ length: 150 }, () => ({
+      x: Math.random() * W, y: -20 - Math.random() * H * 0.6,
+      w: 5 + Math.random() * 5, h: 8 + Math.random() * 8,
+      vx: (Math.random() - 0.5) * 1.2, vy: 2 + Math.random() * 3,
+      r: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.25,
+      sw: Math.random() * 6.28, c: cols[(Math.random() * cols.length) | 0],
+    }));
+    const t0 = performance.now();
+    (function frame(now) {
+      ctx.clearRect(0, 0, W, H);
+      let alive = false;
+      for (const p of P) {
+        p.sw += 0.05; p.x += p.vx + Math.sin(p.sw) * 0.6; p.y += p.vy; p.r += p.vr;
+        if (p.y < H + 20) alive = true;
+        ctx.save();
+        ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.scale(1, Math.cos(p.sw * 1.3));
+        ctx.fillStyle = p.c; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      }
+      if (alive && now - t0 < 7000) requestAnimationFrame(frame);
+      else ctx.clearRect(0, 0, W, H);
+    })(t0);
+  }
+
+  /* ---------- 1. 点蜡烛、唱歌 ---------- */
+  const setDark = (v) => { dark.style.opacity = v; };
+
+  async function begin() {
+    audio();
+    keepAwake();
+    const song = playSong();
+    clockEl.classList.add('gone');
+    act([]);
+    const c = C.song ? C.songCaption : C.synthCaption;
+    say(c[0], c[1]);
+    await wait(700);
+    for (let i = 0; i < flames.length; i++) {
+      strike();
+      flames[i].classList.add('on');
+      glow.classList.add('on');
+      setDark(0.93 - (0.75 * (i + 1)) / flames.length);
+      await wait(650);
+    }
+    await song;
+    await wait(500);
+    await say('闭上眼睛，许个愿吧', '听到「叮」的一声，再睁开眼睛');
+    act([{ label: '好，我闭上眼睛了', on: closeEyes }]);
+  }
+
+  /* ---------- 2. 许愿 ---------- */
+  async function closeEyes() {
+    act([]);
+    document.body.classList.add('eyes');
+    await wait(8000);
+    chime();
+    document.body.classList.remove('eyes');
+    await say('许好愿了吗？', '现在，吹蜡烛吧');
+    act([{ label: '吹蜡烛', on: startBlow }]);
+  }
+
+  /* ---------- 3. 吹蜡烛：对着麦克风吹，或者点一下 ---------- */
+  let blowing = false, isOut = false, stream = null, raf = 0;
+
+  function stopMic() {
+    if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
+  }
+
+  function listen() {
+    const src = ac.createMediaStreamSource(stream), an = ac.createAnalyser();
+    an.fftSize = 512;
+    src.connect(an);
+    const buf = new Uint8Array(an.fftSize);
+    let n = 0, base = 0, hot = 0, last = performance.now();
+    const loop = (now) => {
+      if (!blowing) return;
+      an.getByteTimeDomainData(buf);
+      let sum = 0;
+      for (let i = 0; i < buf.length; i++) { const v = (buf[i] - 128) / 128; sum += v * v; }
+      const rms = Math.sqrt(sum / buf.length);
+      if (n < 15) { base = Math.max(base, rms); n++; }
+      const th = Math.min(0.3, Math.max(0.12, base * 3));
+      const lvl = Math.min(1, rms / th);
+      side.style.setProperty('--lean', f2(-lvl * 22) + 'deg');
+      side.style.setProperty('--squash', f2(1 - lvl * 0.25));
+      const dt = Math.min(100, now - last);
+      last = now;
+      hot = rms > th ? hot + dt : Math.max(0, hot - dt);
+      if (hot > 200) { blowOut(); return; }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+  }
+
+  async function startBlow() {
+    audio();
+    act([]);
+    blowing = true;
+    side.classList.add('tappable');
+    await say('对着手机，用力吹一口气', '手机如果问能不能用麦克风，点「允许」');
+    act([{ label: '吹不动？点一下蜡烛也行', link: true, on: blowOut, delay: 1 }]);
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('no mic');
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+      if (!blowing) { stopMic(); return; }
+      if (ac.state === 'suspended') await ac.resume().catch(() => {});
+      listen();
+      say('吹吧！', '对着手机下面，呼——');
+    } catch (e) {
+      if (blowing) say('那就点一下蜡烛吧', '我帮你吹灭它');
+    }
+  }
+  side.addEventListener('click', () => { if (blowing) blowOut(); });
+
+  async function blowOut() {
+    if (isOut) return;
+    isOut = true;
+    blowing = false;
+    cancelAnimationFrame(raf);
+    stopMic();
+    side.classList.remove('tappable');
+    act([]);
+    cap.classList.add('out');
+    side.style.setProperty('--lean', '-24deg');
+    side.style.setProperty('--squash', '.8');
+    flames.forEach((f, i) => setTimeout(() => { f.classList.add('off'); smokes[i].classList.add('go'); }, i * 160));
+    glow.classList.remove('on');
+    setDark(0.9);
+    await wait(2200);
+    lightsOn();
+  }
+
+  /* ---------- 4. 开灯 ---------- */
+  async function lightsOn() {
+    click();
+    fanfare();
+    document.body.dataset.lights = 'on';
+    setDark(0);
+    shade.style.opacity = 0;
+    confetti();
+    await say(C.lightsOn[0], C.lightsOn[1]);
+    act([{ label: '切蛋糕', on: toTop, delay: 0.6 }]);
+  }
+
+  /* ---------- 5. 切蛋糕：手指划一刀 ---------- */
+  const cakeBox = $('#cake');
+  let swipeOn = false, swipeFrom = null, didCut = false;
+
+  async function toTop() {
+    audio();
+    act([]);
+    side.classList.add('away');
+    await wait(480);
+    side.setAttribute('hidden', '');
+    topSvg.removeAttribute('hidden');
+    requestAnimationFrame(() => requestAnimationFrame(() => topSvg.classList.add('in')));
+    await say('拿起刀，切蛋糕吧', '用手指在蛋糕上，从左往右划一刀');
+    swipeOn = true;
+    cakeBox.style.touchAction = 'none';
+    act([{ label: '划不动？点这里切', link: true, on: cut, delay: 1.5 }]);
+  }
+
+  function svgPoint(e) {
+    const r = topSvg.getBoundingClientRect(), s = Math.min(r.width, r.height) / 320;
+    return [
+      (e.clientX - (r.left + (r.width - 320 * s) / 2)) / s - 160,
+      (e.clientY - (r.top + (r.height - 320 * s) / 2)) / s - 160,
+    ];
+  }
+  function trail(a, b, on) {
+    const t = $('#trail');
+    t.setAttribute('x1', f2(a[0])); t.setAttribute('y1', f2(a[1]));
+    t.setAttribute('x2', f2(b[0])); t.setAttribute('y2', f2(b[1]));
+    t.classList.toggle('on', on);
+  }
+  cakeBox.addEventListener('pointerdown', (e) => {
+    if (!swipeOn) return;
+    swipeFrom = svgPoint(e);
+    try { cakeBox.setPointerCapture(e.pointerId); } catch (err) {}
+    trail(swipeFrom, swipeFrom, true);
+  });
+  cakeBox.addEventListener('pointermove', (e) => {
+    if (swipeOn && swipeFrom) trail(swipeFrom, svgPoint(e), true);
+  });
+  cakeBox.addEventListener('pointerup', (e) => {
+    if (!swipeOn || !swipeFrom) return;
+    const p = svgPoint(e), d = Math.hypot(p[0] - swipeFrom[0], p[1] - swipeFrom[1]);
+    swipeFrom = null;
+    trail([0, 0], [0, 0], false);
+    if (d > 130) cut();
+    else if (d > 12) say('再划长一点', '从蛋糕左边，一直划到右边');
+  });
+  cakeBox.addEventListener('pointercancel', () => { swipeFrom = null; trail([0, 0], [0, 0], false); });
+
+  async function cut() {
+    if (didCut) return;
+    didCut = true;
+    swipeOn = false;
+    cakeBox.style.touchAction = '';
+    act([]);
+    audio();
+    $('#guide').classList.add('gone');
+    $('#cuts').classList.add('go');
+    for (let k = 0; k < 4; k++) setTimeout(sliceSound, k * 190);
+    await wait(1150);
+    $('#wedges').classList.add('apart');
+    $('#cuts').classList.add('fade');
+    C.slices.forEach((s) => { if (s.photo) new Image().src = s.photo; });
+    await say('每一块里，都藏着一点东西', '随便点一块尝尝');
+    wedges.forEach((w) => w.addEventListener('click', () => pick(w)));
+  }
+
+  /* ---------- 6. 一块一块打开 ---------- */
+  const total = Math.min(7, C.slices.length);
+  const memOf = new Map(), eaten = new Set();
+  let next = 0, mineSeen = false, cardOpen = false, onClose = null;
+  const card = $('#card'), photo = $('#photo');
+
+  function pick(w) {
+    if (cardOpen) return;
+    const i = +w.dataset.i;
+    if (i === MINE) {
+      cardOpen = true;
+      w.classList.remove('call');
+      w.classList.add('pick');
+      setTimeout(() => openMine(w), 420);
+      return;
+    }
+    let m = memOf.get(i);
+    if (m === undefined) {
+      if (next >= total) return;
+      m = next++;
+      memOf.set(i, m);
+    }
+    cardOpen = true;
+    w.classList.add('pick');
+    setTimeout(() => openMemory(m, w), 420);
+  }
+
+  function showCard() {
+    card.hidden = false;
+    card.querySelector('.sheet').scrollTop = 0;
+    requestAnimationFrame(() => requestAnimationFrame(() => card.classList.add('show')));
+  }
+  $('#cardBtn').addEventListener('click', async () => {
+    card.classList.remove('show');
+    await wait(380);
+    card.hidden = true;
+    cardOpen = false;
+    const f = onClose;
+    onClose = null;
+    if (f) f();
+  });
+
+  function fillPhoto(s, m) {
+    const img = photo.querySelector('img'), ph = photo.querySelector('.ph');
+    photo.querySelector('figcaption').textContent = s.note || '';
+    photo.style.setProperty('--tilt', (m % 2 ? 1.6 : -1.8) + 'deg');
+    const empty = () => {
+      img.hidden = true;
+      ph.hidden = false;
+      ph.innerHTML = '';
+      const b = document.createElement('b'), t = document.createElement('span');
+      b.textContent = `照片 ${m + 1}`;
+      t.textContent = s.hint || '';
+      ph.append(b, t);
+    };
+    img.onerror = null;
+    img.removeAttribute('src');
+    ph.hidden = true;
+    img.hidden = false;
+    img.alt = s.title || '';
+    if (!s.photo) { empty(); return; }
+    img.onerror = empty;
+    img.src = s.photo;
+  }
+
+  function openMemory(m, w) {
+    const s = C.slices[m];
+    $('#count').textContent = `第 ${m + 1} 块 · 共 ${total} 块`;
+    photo.hidden = false;
+    $('#mineArt').setAttribute('hidden', '');
+    $('#countdown').hidden = true;
+    fillPhoto(s, m);
+    $('#cardTitle').textContent = s.title || '';
+    $('#cardText').textContent = s.text || '';
+    $('#cardBtn').textContent = '收下啦';
+    onClose = () => {
+      w.classList.remove('pick');
+      w.classList.add('eaten');
+      eaten.add(+w.dataset.i);
+      afterSlice();
+    };
+    showCard();
+  }
+
+  function countdownText() {
+    if (C.mine.returnDate) {
+      const d = Math.ceil((new Date(C.mine.returnDate + 'T00:00:00') - new Date()) / 864e5);
+      return d > 0 ? `离我回家，还有 ${d} 天` : '我回来啦';
+    }
+    return '12 月见';
+  }
+
+  function openMine(w) {
+    $('#count').textContent = '最后一块';
+    photo.hidden = true;
+    $('#mineArt').removeAttribute('hidden');
+    $('#cardTitle').textContent = C.mine.title;
+    $('#cardText').textContent = C.mine.text;
+    const cd = $('#countdown');
+    cd.hidden = false;
+    cd.textContent = countdownText();
+    $('#cardBtn').textContent = '好，给你留着';
+    onClose = () => {
+      w.classList.remove('pick');
+      mineSeen = true;
+      afterSlice();
+    };
+    showCard();
+  }
+
+  const mineWedge = () => wedges[MINE];
+  function afterSlice() {
+    const left = total - eaten.size;
+    if (left > 0) say(`还有 ${left} 块`, '接着尝尝');
+    else if (!mineSeen) {
+      say('还剩最后一块', '这一块，有点特别');
+      mineWedge().classList.add('call');
+    } else letterPrompt();
+  }
+
+  async function letterPrompt() {
+    await say('最后，还有一封信', '');
+    act([{ label: '打开信', on: openLetter }]);
+  }
+
+  /* ---------- 7. 信 ---------- */
+  function openLetter() {
+    const paper = $('#paper');
+    paper.innerHTML = '';
+    const lines = C.letter.map((t, i) => [i === 0 ? 'salute' : '', t])
+      .concat([['sign', '爱你的 ' + C.from], ['date', C.date]]);
+    lines.forEach(([cls, t], i) => {
+      const p = document.createElement('p');
+      if (cls) p.className = cls;
+      p.textContent = t;
+      p.style.animationDelay = (0.5 + i * 0.7) + 's';
+      paper.appendChild(p);
+    });
+    const tilts = [-3, 2, -1.5, 3, -2, 1.5, -2.5];
+    const T = $('#thumbs');
+    T.innerHTML = '';
+    C.slices.slice(0, total).forEach((s, i) => {
+      const f = document.createElement('figure');
+      f.style.setProperty('--tilt', tilts[i % tilts.length] + 'deg');
+      const ph = () => {
+        const d = document.createElement('div');
+        d.className = 'tph';
+        d.textContent = i + 1;
+        f.innerHTML = '';
+        f.appendChild(d);
+      };
+      if (s.photo) {
+        const img = new Image();
+        img.alt = s.title || '';
+        img.onerror = ph;
+        img.src = s.photo;
+        f.appendChild(img);
+      } else ph();
+      T.appendChild(f);
+    });
+    $('#final').textContent = C.ending;
+    const L = $('#letter');
+    L.hidden = false;
+    L.scrollTop = 0;
+    requestAnimationFrame(() => requestAnimationFrame(() => L.classList.add('show')));
+  }
+  $('#again').addEventListener('click', () => location.reload());
+
+  // 防止微信里下拉露出网页来源，只让信和照片卡片能滚动
+  document.addEventListener('touchmove', (e) => {
+    if (!e.target.closest || !e.target.closest('.letter, .sheet')) e.preventDefault();
+  }, { passive: false });
+
+  /* ---------- 开场 ---------- */
+  buildSide();
+  buildTop();
+  setDark(0.93);
+  say(C.intro, '');
+  act([
+    { label: '点亮蜡烛', on: begin, delay: (C.intro.length - 1) * 0.9 + 1.2 },
+    { hint: '打开声音，效果更好', delay: (C.intro.length - 1) * 0.9 + 1.5 },
+  ]);
+})();
+</script>
+</body>
+</html>
