@@ -480,6 +480,15 @@ const CONFIG = {
   const strike = () => noise(0.35, 900, 0.6, 0.25);
   const click = () => noise(0.05, 1800, 1.5, 0.6);
 
+  // 一打开就在后台先下好歌，再下照片；国内跨洋加载慢，等点亮蜡烛时歌已经在手机里了
+  let songSrc = C.song;
+  const preloadPhotos = () => C.slices.forEach((s) => { if (s.photo) new Image().src = s.photo; });
+  if (C.song && window.fetch) {
+    fetch(C.song).then((r) => (r.ok ? r.blob() : null))
+      .then((b) => { if (b) songSrc = URL.createObjectURL(b); })
+      .catch(() => {}).then(preloadPhotos);
+  } else preloadPhotos();
+
   // 先放你录的歌；加载不出来就换八音盒，保证仪式能走完
   function playSong() {
     return new Promise((done) => {
@@ -490,8 +499,8 @@ const CONFIG = {
         setTimeout(done, musicBox() + 300);
       };
       if (!C.song) { synth(); return; }
-      const a = new Audio(C.song);
-      const fallback = setTimeout(() => { if (!started) { a.pause(); synth(); } }, 6000);
+      const a = new Audio(songSrc);
+      const fallback = setTimeout(() => { if (!started) { a.pause(); synth(); } }, 12000);
       a.addEventListener('playing', () => { started = true; clearTimeout(fallback); if (synthUsed) a.pause(); }, { once: true });
       a.addEventListener('ended', () => { if (!synthUsed) done(); });
       a.addEventListener('error', () => { clearTimeout(fallback); if (!started) synth(); else if (!synthUsed) done(); });
